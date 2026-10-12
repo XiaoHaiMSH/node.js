@@ -31,10 +31,10 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
   build-node:
-    name: Build Node.js (${{ matrix.platform_name }}, ${{ matrix.pkg_format }})
+    name: Build node (${{ matrix.platform_name }}, ${{ matrix.pkg_format }})
     needs: tag
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -86,7 +86,7 @@ jobs:
           sudo apt-get -qq install --no-install-recommends \
             build-essential clang flex bison g++ gawk gettext git \
             libelf-dev libncurses-dev libssl-dev python3 python3-setuptools \
-            rsync swig time unzip xsltproc zip zlib1g-dev zstd
+            rsync swig time unzip xsltproc xz-utils zip zlib1g-dev zstd
 
       - name: Locate SDK
         id: sdk
@@ -129,108 +129,58 @@ jobs:
           rm -rf "$SDK_ROOT/package/node"
           cp -a node "$SDK_ROOT/package/node"
 
-      - name: Update and install feeds
-        run: |
-          cd "$SDK_ROOT"
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
-          # 移除 SDK 自带的 node 默认包，强制使用仓库本地的 node 目录
-          rm -rf feeds/packages/lang/node
-
-      - name: Configure packages
-        run: |
-          cat > "$SDK_ROOT/.config" <<EOF
-          CONFIG_TARGET_${{ matrix.target }}=y
-          CONFIG_TARGET_${{ matrix.target }}_${{ matrix.subtarget }}=y
-          CONFIG_TARGET_MULTI_PROFILE=y
-          CONFIG_DEVEL=y
-          CONFIG_BUILD_LOG=y
-          CONFIG_PACKAGE_node=m
-          CONFIG_PACKAGE_node-npm=m
-          EOF
-
-          make -C "$SDK_ROOT" defconfig
-
-      - name: Compile packages
-        run: |
-          make -C "$SDK_ROOT" package/node/clean
-          make -C "$SDK_ROOT" -j"$(nproc)" \
-            package/node/compile \
-            package/node-npm/compile || \
-            make -C "$SDK_ROOT" -j1 \
-              package/node/compile \
-              package/node-npm/compile V=s
-
-      - name: Collect packages
+      - name: Build and collect packages
         env:
           ARCH_SUFFIX: ${{ matrix.arch_suffix }}
           PKG_FORMAT: ${{ matrix.pkg_format }}
         run: |
           mkdir -p "$RUNNER_TEMP/output"
-          node_found=0
-          npm_found=0
 
-          if [[ "$PKG_FORMAT" == "apk" ]]; then
-            while IFS= read -r -d '' apk; do
-              metadata="$("$SDK_ROOT/staging_dir/host/bin/apk" adbdump "$apk")"
-              name="$(awk '/^  name: / { sub(/^  name: /, ""); print; exit }' <<< "$metadata")"
-
-              if [[ "$name" == "node" ]]; then
-                base="$(basename "$apk")"
-                version_part="${base#node}"
-                version_part="${version_part#[-_]}"
-                version_part="${version_part%.apk}"
-                cp -p "$apk" "$RUNNER_TEMP/output/node_${ARCH_SUFFIX}-${version_part}.apk"
-                node_found=$((node_found + 1))
-              elif [[ "$name" == "node-npm" ]]; then
-                base="$(basename "$apk")"
-                version_part="${base#node-npm}"
-                version_part="${version_part#[-_]}"
-                version_part="${version_part%.apk}"
-                cp -p "$apk" "$RUNNER_TEMP/output/node-npm_${ARCH_SUFFIX}-${version_part}.apk"
-                npm_found=$((npm_found + 1))
+          collect() {
+            local major="$1" main=0 npm=0 pkg base out
+            while IFS= read -r -d '' pkg; do
+              base="$(basename "$pkg")"
+              if [[ "$PKG_FORMAT" == "apk" ]]; then
+                out="${base%.apk}_${ARCH_SUFFIX}.apk"
+              else
+                out="$base"
+              fi
+              cp -p "$pkg" "$RUNNER_TEMP/output/$out"
+              if [[ "$base" == node-npm* ]]; then
+                npm=$((npm + 1))
+              else
+                main=$((main + 1))
               fi
             done < <(find "$SDK_ROOT/bin" -type f \
-              \( -name 'node*.apk' -o -name 'node-npm*.apk' \) -print0)
+              \( -name "node*-${major}.*.apk" -o -name "node*_${major}.*.ipk" \) -print0)
 
-            [[ "$node_found" -eq 1 ]]
-            [[ "$npm_found" -eq 1 ]]
-          else
-            while IFS= read -r -d '' ipk; do
-              control_dir="$(mktemp -d)"
-              (
-                cd "$control_dir" || exit 1
-                if tar -tzf "$ipk" >/dev/null 2>&1; then
-                  tar -xzf "$ipk"
-                else
-                  ar x "$ipk"
-                fi
-                tar -xzf control.tar.gz 2>/dev/null || true
-              )
-              name="$(awk -F': ' '/^Package:/ { print $2; exit }' "$control_dir/control" 2>/dev/null)"
-              rm -rf "$control_dir"
+            [[ "$main" -ge 1 ]]
+            [[ "$npm" -ge 1 ]]
+          }
 
-              if [[ "$name" == "node" ]]; then
-                base="$(basename "$ipk")"
-                version_part="${base#node}"
-                version_part="${version_part#[-_]}"
-                version_part="${version_part%%_*}"
-                cp -p "$ipk" "$RUNNER_TEMP/output/node_${ARCH_SUFFIX}-${version_part}.ipk"
-                node_found=$((node_found + 1))
-              elif [[ "$name" == "node-npm" ]]; then
-                base="$(basename "$ipk")"
-                version_part="${base#node-npm}"
-                version_part="${version_part#[-_]}"
-                version_part="${version_part%%_*}"
-                cp -p "$ipk" "$RUNNER_TEMP/output/node-npm_${ARCH_SUFFIX}-${version_part}.ipk"
-                npm_found=$((npm_found + 1))
-              fi
-            done < <(find "$SDK_ROOT/bin" -type f \
-              \( -name 'node*.ipk' -o -name 'node-npm*.ipk' \) -print0)
+          for major in 22 24 26; do
+            printf '%s\n' \
+              "CONFIG_TARGET_${{ matrix.target }}=y" \
+              "CONFIG_TARGET_${{ matrix.target }}_${{ matrix.subtarget }}=y" \
+              "CONFIG_TARGET_MULTI_PROFILE=y" \
+              "CONFIG_DEVEL=y" \
+              "CONFIG_BUILD_LOG=y" \
+              "CONFIG_NODEJS_${major}=y" \
+              "CONFIG_PACKAGE_node=m" \
+              "CONFIG_PACKAGE_node-npm=m" \
+              > "$SDK_ROOT/.config"
 
-            [[ "$node_found" -eq 1 ]]
-            [[ "$npm_found" -eq 1 ]]
-          fi
+            make -C "$SDK_ROOT" defconfig
+            grep -q "^CONFIG_NODEJS_${major}=y" "$SDK_ROOT/.config"
+
+            make -C "$SDK_ROOT" package/node/clean
+            make -C "$SDK_ROOT" -j"$(nproc)" package/node/compile || \
+              make -C "$SDK_ROOT" -j1 package/node/compile V=s
+
+            collect "$major"
+          done
+
+          ls -l "$RUNNER_TEMP/output"
 
       - name: Upload packages
         uses: actions/upload-artifact@v4
