@@ -89,7 +89,10 @@ define Build/Configure
 endef
 
 define Build/Compile
-	$(if $(filter x64,$(NODE_ARCH)),patchelf --replace-needed libc.musl-x86_64.so.1 libc.so $(PKG_BUILD_DIR)/bin/node)
+	[ "$(NODE_ARCH)" != "x64" ] || { \
+		perl -0777 -pi -e 's/\0libc\.musl-x86_64\.so\.1\0/"\0libc.so" . "\0" x 15/e' $(PKG_BUILD_DIR)/bin/node && \
+		$(TARGET_CROSS)readelf -d $(PKG_BUILD_DIR)/bin/node | grep -q 'Shared library: \[libc\.so\]'; \
+	}
 endef
 
 define Package/node/install
