@@ -124,10 +124,15 @@ jobs:
           tar --zstd -xf "$archive" -C "$RUNNER_TEMP/sdk-root"
           echo "SDK_ROOT=$(find "$RUNNER_TEMP/sdk-root" -mindepth 1 -maxdepth 1 -type d -name 'immortalwrt-sdk-*' -print -quit)" >> "$GITHUB_ENV"
 
-      - name: Update and install feeds
+      # 先把自己的 node 包拷进去，再更新 feeds，这样 feeds 会自动跳过同名包
+      - name: Prepare packages
+        run: |
+          rm -rf "$SDK_ROOT/package/node"
+          cp -a node "$SDK_ROOT/package/node"
+
+      - name: Update feeds
         run: |
           "$SDK_ROOT/scripts/feeds" update -a
-          "$SDK_ROOT/scripts/feeds" install -a
 
       - name: Configure packages
         run: |
@@ -138,17 +143,18 @@ jobs:
           CONFIG_DEVEL=y
           CONFIG_BUILD_LOG=y
           CONFIG_PACKAGE_node=m
+          CONFIG_PACKAGE_node-npm=m
           EOF
 
           make -C "$SDK_ROOT" defconfig
 
       - name: Compile packages
         run: |
-          make -C "$SDK_ROOT" package/feeds/packages/node/clean
+          make -C "$SDK_ROOT" package/node/clean
           make -C "$SDK_ROOT" -j"$(nproc)" \
-            package/feeds/packages/node/compile || \
+            package/node/compile || \
             make -C "$SDK_ROOT" -j1 \
-              package/feeds/packages/node/compile V=s
+              package/node/compile V=s
 
       - name: Collect packages
         env:
@@ -157,22 +163,32 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/output"
           node_found=0
+          npm_found=0
 
           if [[ "$PKG_FORMAT" == "apk" ]]; then
             while IFS= read -r -d '' apk; do
               metadata="$("$SDK_ROOT/staging_dir/host/bin/apk" adbdump "$apk")"
               name="$(awk '/^  name: / { sub(/^  name: /, ""); print; exit }' <<< "$metadata")"
+              base="$(basename "$apk")"
 
-              if [[ "$name" == "node" ]]; then
-                base="$(basename "$apk")"
-                version_part="${base#node-}"
-                version_part="${version_part%.apk}"
-                cp -p "$apk" "$RUNNER_TEMP/output/node_${ARCH_SUFFIX}-${version_part}.apk"
-                node_found=$((node_found + 1))
-              fi
+              case "$name" in
+                node)
+                  version_part="${base#node-}"
+                  version_part="${version_part%.apk}"
+                  cp -p "$apk" "$RUNNER_TEMP/output/node_${ARCH_SUFFIX}-${version_part}.apk"
+                  node_found=$((node_found + 1))
+                  ;;
+                node-npm)
+                  version_part="${base#node-npm-}"
+                  version_part="${version_part%.apk}"
+                  cp -p "$apk" "$RUNNER_TEMP/output/node-npm_${version_part}.apk"
+                  npm_found=$((npm_found + 1))
+                  ;;
+              esac
             done < <(find "$SDK_ROOT/bin" -type f -name 'node-*.apk' -print0)
 
             [[ "$node_found" -ge 1 ]]
+            [[ "$npm_found" -ge 1 ]]
           else
             while IFS= read -r -d '' ipk; do
               control_dir="$(mktemp -d)"
@@ -187,17 +203,26 @@ jobs:
               )
               name="$(awk -F': ' '/^Package:/ { print $2; exit }' "$control_dir/control" 2>/dev/null)"
               rm -rf "$control_dir"
+              base="$(basename "$ipk")"
 
-              if [[ "$name" == "node" ]]; then
-                base="$(basename "$ipk")"
-                version_part="${base#node_}"
-                version_part="${version_part%%_*}"
-                cp -p "$ipk" "$RUNNER_TEMP/output/node_${ARCH_SUFFIX}-${version_part}.ipk"
-                node_found=$((node_found + 1))
-              fi
-            done < <(find "$SDK_ROOT/bin" -type f -name 'node_*.ipk' -print0)
+              case "$name" in
+                node)
+                  version_part="${base#node_}"
+                  version_part="${version_part%%_*}"
+                  cp -p "$ipk" "$RUNNER_TEMP/output/node_${ARCH_SUFFIX}-${version_part}.ipk"
+                  node_found=$((node_found + 1))
+                  ;;
+                node-npm)
+                  version_part="${base#node-npm_}"
+                  version_part="${version_part%%_*}"
+                  cp -p "$ipk" "$RUNNER_TEMP/output/node-npm_${version_part}.ipk"
+                  npm_found=$((npm_found + 1))
+                  ;;
+              esac
+            done < <(find "$SDK_ROOT/bin" -type f \( -name 'node_*.ipk' -o -name 'node-npm_*.ipk' \) -print0)
 
             [[ "$node_found" -ge 1 ]]
+            [[ "$npm_found" -ge 1 ]]
           fi
 
       - name: Upload packages
