@@ -46,8 +46,9 @@ define Package/node
 endef
 
 define Package/node/description
-  Node.js is a JavaScript runtime built on Chrome's V8 JavaScript engine.
-  Prebuilt musl binary from unofficial-builds.nodejs.org (aarch64 and x86_64 only).
+  Node.js® is a JavaScript runtime built on Chrome's V8 JavaScript engine. Node.js uses
+  an event-driven, non-blocking I/O model that makes it lightweight and efficient. Node.js'
+   package ecosystem, npm, is the largest ecosystem of open source libraries in the world.
 endef
 
 define Package/node-npm
