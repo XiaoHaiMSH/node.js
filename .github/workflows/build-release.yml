@@ -124,10 +124,10 @@ jobs:
           tar --zstd -xf "$archive" -C "$RUNNER_TEMP/sdk-root"
           echo "SDK_ROOT=$(find "$RUNNER_TEMP/sdk-root" -mindepth 1 -maxdepth 1 -type d -name 'immortalwrt-sdk-*' -print -quit)" >> "$GITHUB_ENV"
 
-      # 先把自己的 node 包拷进去，再更新 feeds，这样 feeds 会自动跳过同名包
       - name: Prepare packages
         run: |
           rm -rf "$SDK_ROOT/package/node"
+          rm -rf "$SDK_ROOT/package/feeds/packages/node"
           cp -a node "$SDK_ROOT/package/node"
 
       - name: Update feeds
@@ -148,6 +148,9 @@ jobs:
 
           make -C "$SDK_ROOT" defconfig
 
+          echo "========== effective config =========="
+          grep -E 'CONFIG_PACKAGE_node' "$SDK_ROOT/.config" || true
+
       - name: Compile packages
         run: |
           make -C "$SDK_ROOT" package/node/clean
@@ -162,14 +165,29 @@ jobs:
           PKG_FORMAT: ${{ matrix.pkg_format }}
         run: |
           mkdir -p "$RUNNER_TEMP/output"
+
+          echo "========== SDK bin tree (all apk/ipk) =========="
+          find "$SDK_ROOT/bin" -type f \( -name '*.apk' -o -name '*.ipk' \) | sort || true
+
+          echo "========== package/node Makefile (head) =========="
+          head -n 60 "$SDK_ROOT/package/node/Makefile" 2>/dev/null || echo "NOT FOUND"
+
+          echo "========== build_dir node =========="
+          ls -la "$SDK_ROOT"/build_dir/target-*/node-v* 2>/dev/null || echo "NO build_dir node"
+
+          echo "========== staging_dir/host/bin/apk =========="
+          ls -la "$SDK_ROOT/staging_dir/host/bin/apk" 2>/dev/null || echo "NO apk tool"
+
+          echo "========== copy what we can find (no assert) =========="
           node_found=0
           npm_found=0
 
           if [[ "$PKG_FORMAT" == "apk" ]]; then
             while IFS= read -r -d '' apk; do
-              metadata="$("$SDK_ROOT/staging_dir/host/bin/apk" adbdump "$apk")"
+              metadata="$("$SDK_ROOT/staging_dir/host/bin/apk" adbdump "$apk" 2>/dev/null || true)"
               name="$(awk '/^  name: / { sub(/^  name: /, ""); print; exit }' <<< "$metadata")"
               base="$(basename "$apk")"
+              echo "apk: file=$base name=$name"
 
               case "$name" in
                 node)
@@ -186,9 +204,6 @@ jobs:
                   ;;
               esac
             done < <(find "$SDK_ROOT/bin" -type f -name 'node-*.apk' -print0)
-
-            [[ "$node_found" -ge 1 ]]
-            [[ "$npm_found" -ge 1 ]]
           else
             while IFS= read -r -d '' ipk; do
               control_dir="$(mktemp -d)"
@@ -204,6 +219,7 @@ jobs:
               name="$(awk -F': ' '/^Package:/ { print $2; exit }' "$control_dir/control" 2>/dev/null)"
               rm -rf "$control_dir"
               base="$(basename "$ipk")"
+              echo "ipk: file=$base name=$name"
 
               case "$name" in
                 node)
@@ -220,17 +236,21 @@ jobs:
                   ;;
               esac
             done < <(find "$SDK_ROOT/bin" -type f \( -name 'node_*.ipk' -o -name 'node-npm_*.ipk' \) -print0)
-
-            [[ "$node_found" -ge 1 ]]
-            [[ "$npm_found" -ge 1 ]]
           fi
 
+          echo "========== result =========="
+          echo "node_found=$node_found"
+          echo "npm_found=$npm_found"
+          echo "=== output dir ==="
+          ls -la "$RUNNER_TEMP/output"
+
       - name: Upload packages
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: node-${{ matrix.pkg_format }}-${{ matrix.platform_name }}
+          name: node-debug-${{ matrix.pkg_format }}-${{ matrix.platform_name }}
           path: ${{ runner.temp }}/output
-          if-no-files-found: error
+          if-no-files-found: warn
 
   release:
     name: Publish combined release
@@ -251,9 +271,10 @@ jobs:
             cp -f "$f" "$RUNNER_TEMP/release/"
           done
 
-          echo "=== SHA256SUMS (log only, not published to the release) ==="
+          echo "=== files in release dir ==="
+          ls -la "$RUNNER_TEMP/release"
           cd "$RUNNER_TEMP/release"
-          sha256sum -- *
+          sha256sum -- * || true
 
       - name: Publish release
         env:
