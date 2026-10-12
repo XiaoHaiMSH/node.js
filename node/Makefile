@@ -89,6 +89,7 @@ define Build/Configure
 endef
 
 define Build/Compile
+	$(if $(filter x64,$(NODE_ARCH)),patchelf --replace-needed libc.musl-x86_64.so.1 libc.so $(PKG_BUILD_DIR)/bin/node)
 endef
 
 define Package/node/install
