@@ -15,3 +15,10 @@ docker
 docker-compose
 luci-lib-docker
 luci-app-dockerman
+luci-app-wolultra
+luci-app-adguardhome
+adguardhome
+luci-app-alpha-config
+luci-theme-alpha
+luci-app-openlist2
+openlist2
