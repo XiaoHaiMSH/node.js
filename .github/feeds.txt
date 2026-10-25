@@ -4,3 +4,5 @@
 # 建议用 ^提交号 固定版本，避免上游改动导致编不过
 #
 # src-git istore https://github.com/linkease/istore.git;main
+src-git kenzok8 https://github.com/kenzok8/openwrt-packages.git;master
+src-git VIKINGYFY https://github.com/VIKINGYFY/packages.git;main
