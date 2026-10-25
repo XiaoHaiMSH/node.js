@@ -1,0 +1,6 @@
+# 额外 feed，一行一个，格式同 feeds.conf.default：src-git 名字 地址[;分支 或 ^提交号]
+# 名字用于 packages.txt 里的 @名字
+# 外部 feed 追加在官方 feed 之后；只有 packages.txt 里点名的包才会被它们覆盖官方
+# 建议用 ^提交号 固定版本，避免上游改动导致编不过
+#
+# src-git istore https://github.com/linkease/istore.git;main

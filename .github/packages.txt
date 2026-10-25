@@ -1,0 +1,17 @@
+# 要编译并发布的插件，一行一个（# 开头为注释）
+# 写法：目录名 [这个目录额外产出的包名 ...] [@feed名]
+#   node node-npm @mynode   node 目录，同时产出 node-npm，强制用 feeds.txt 里 mynode 这个 feed
+#   luci-app-xxx @other     强制用 other 这个 feed；指定的 feed 里没有会直接报错停止
+#   curl                    不写 @ 就按默认优先级选
+#
+# 默认优先级：本仓库根目录同名目录 > feeds.txt 里的外部 feed（越靠上越优先）> 官方 feed
+# 写在这里的包，其余来源里的同名包会在编译前被删掉，只保留选中的那一份
+# 没写在这里的包（包括依赖），按 OpenWrt 默认顺序处理（官方优先），且不会被发布
+# luci-app-* 会自动连带编译 luci-i18n-*-zh-cn
+runc
+containerd
+dockerd
+docker
+docker-compose
+luci-lib-docker
+luci-app-dockerman
