@@ -4,8 +4,6 @@ https://github.com/XiaoHaiSly/openwrt-packages.git
 
 # OpenWRT-CI
 
-源码来源
-
 LibWrt：
 
 https://github.com/LiBwrt/LibWrt.git
