@@ -4,10 +4,11 @@ https://github.com/XiaoHaiSly/openwrt-packages.git
 
 # OpenWRT-CI
 
-LibWrt：https://github.com/LiBwrt/LibWrt.git
+源码：
 
-VIKINGYFY：https://github.com/VIKINGYFY/immortalwrt.git
+https://github.com/LiBwrt/LibWrt.git
 
+https://github.com/VIKINGYFY/immortalwrt.git
 
 # 固件简要说明
 
