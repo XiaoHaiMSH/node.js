@@ -4,11 +4,11 @@ https://github.com/XiaoHaiSly/openwrt-packages.git
 
 # OpenWRT-CI
 
--LibWrt：
+- LibWrt：
 
 https://github.com/LiBwrt/LibWrt.git
 
--VIKINGYFY：
+- VIKINGYFY：
 
 https://github.com/VIKINGYFY/immortalwrt.git
 
