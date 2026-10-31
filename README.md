@@ -1,57 +1,42 @@
-<div align="center">
+# OpenWrt-CI
 
-# OpenWrt 自用固件
+个人维护的 OpenWrt / ImmortalWrt 固件编译项目，基于不同上游源码构建，集成自用插件及配套软件源。
 
-**个人自用 · 每日自动编译 · 内置完整 kmod 源**
+## 项目仓库
 
-<sub>MEDIATEK 系列 · QUALCOMMAX 系列</sub>
+### 自用插件软件源
 
-</div>
+[XiaoHaiSly/openwrt-packages](https://github.com/XiaoHaiSly/openwrt-packages)
 
----
+个人维护的插件软件包，预置于固件中，并通过每日定时任务自动更新。
 
-## 📦 自用插件包
+### 上游源码
 
-> 个人维护的自用插件源，配合固件使用。
+| 项目 | 源码仓库 |
+| :--- | :--- |
+| **LibWrt** | [LiBwrt/LibWrt](https://github.com/LiBwrt/LibWrt) |
+| **VIKINGYFY** | [VIKINGYFY/immortalwrt](https://github.com/VIKINGYFY/immortalwrt) |
 
-- **仓库地址**：<https://github.com/XiaoHaiSly/openwrt-packages>
+## 固件特性
 
----
+- **配套内核模块源**：固件内置与当前固件内核相匹配的 kmod 软件源，完整提供全部内核模块。
+- **自用插件源**：预置个人维护的插件软件源，每日定时更新。
+- **自动编译**：每天早上 05:00 自动触发固件编译。
+- **编译时间标识**：固件信息中显示编译开始时间，便于核对上游源码提交时间及构建批次。
 
-## 🔧 OpenWRT-CI
+## 支持平台
 
-固件基于以下上游仓库构建：
+- **MEDIATEK** 系列
+- **QUALCOMMAX** 系列
 
-| 上游仓库 | 地址 |
-| :-- | :-- |
-| **LibWrt** | <https://github.com/LiBwrt/LibWrt> |
-| **VIKINGYFY** | <https://github.com/VIKINGYFY/immortalwrt> |
+## 项目目录
 
----
-
-## ✨ 固件说明
-
-| 项目 | 说明 |
-| :-- | :-- |
-| 🧩 **内核模块** | 内置配套 kmod 软件源，**完整提供全部内核模块** |
-| 🛒 **插件软件源** | 预置个人维护的自用插件源，**每日定时更新** |
-| ⏰ **自动编译** | 每天 **早上 5:00** 自动编译 |
-| 🕐 **时间说明** | 固件信息中的时间为**编译开始时间**，便于核对上游源码提交时间 |
-| 📱 **适配平台** | MEDIATEK 系列、QUALCOMMAX 系列 |
+| 目录 | 说明 |
+| :--- | :--- |
+| `workflows/` | 自定义 GitHub Actions CI 配置 |
+| `Scripts/` | 固件编译及运行相关的自定义脚本 |
+| `Config/` | 固件编译配置及自定义配置文件 |
 
 ---
 
-## 📁 目录结构
-
-```
-.
-├── workflows/   # 自定义 CI 配置
-├── Scripts/     # 自定义脚本
-└── Config/      # 自定义配置
-```
-
----
-
-<div align="center">
-<sub>⭐ 自用固件，按需取用</sub>
-</div>
+*本项目主要用于个人固件构建与维护。*
