@@ -15,7 +15,7 @@ https://github.com/VIKINGYFY/immortalwrt.git
 
 # 固件简要说明
 
-固件内置配套 kmod 软件源并完整收录全部内核模块
+固件内置配套 kmod 软件源并完整提供全部内核模块
 
 固件每天早上5点自动编译。
 
