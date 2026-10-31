@@ -1,4 +1,4 @@
-# 自用修改版插件
+# 自用插件包
 
 https://github.com/XiaoHaiSly/openwrt-packages.git
 
