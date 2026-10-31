@@ -2,13 +2,15 @@
 
 https://github.com/XiaoHaiSly/openwrt-packages.git
 
-# 固件源码
+# OpenWRT-CI
+
+源码来源
 
 LibWrt：
 
 https://github.com/LiBwrt/LibWrt.git
 
-ImmortalWrt：
+VIKINGYFY：
 
 https://github.com/VIKINGYFY/immortalwrt.git
 
