@@ -1,34 +1,31 @@
-# 自用插件包
-
-https://github.com/XiaoHaiSly/openwrt-packages.git
-
 # OpenWRT-CI
 
-LibWrt：
+自动编译的 OpenWrt 固件，每日更新。
 
-https://github.com/LiBwrt/LibWrt.git
+## 📦 源码与插件
 
-VIKINGYFY：
+| 类型 | 仓库 |
+| --- | --- |
+| 自用插件包 | [XiaoHaiSly/openwrt-packages](https://github.com/XiaoHaiSly/openwrt-packages) |
+| LibWrt | [LiBwrt/LibWrt](https://github.com/LiBwrt/LibWrt) |
+| VIKINGYFY | [VIKINGYFY/immortalwrt](https://github.com/VIKINGYFY/immortalwrt) |
 
-https://github.com/VIKINGYFY/immortalwrt.git
+## ✨ 固件特性
 
+- 内置配套 kmod 软件源，完整提供全部内核模块
+- 预置个人维护的自用插件软件源，每日定时更新
+- 每天早上 5 点自动编译
+- 固件信息中的时间为编译开始时间，方便核对上游源码提交时间
 
-# 固件简要说明
+## 🔧 支持平台
 
-固件内置配套 kmod 软件源并完整提供全部内核模块
+- MEDIATEK 系列
+- QUALCOMMAX 系列
 
-固件预置个人维护的自用插件软件源 每日定时更新
+## 📁 目录结构
 
-固件每天早上5点自动编译。
-
-固件信息里的时间为编译开始的时间，方便核对上游源码提交时间。
-
-MEDIATEK系列、QUALCOMMAX系列。
-
-# 目录简要说明
-
-workflows——自定义CI配置
-
-Scripts——自定义脚本
-
-Config——自定义配置
+| 目录 | 说明 |
+| --- | --- |
+| `workflows` | 自定义 CI 配置 |
+| `Scripts` | 自定义脚本 |
+| `Config` | 自定义配置 |
